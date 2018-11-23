@@ -15,28 +15,31 @@ int main()
     const std::string PATH_run = "/home/gergo/data/2018-11-07_chessBoardCalib_noResize_mid";
 
     bool wDebug = true;
-    const std::string debugDir = "./debug";
+    std::string debugDir = "./debug";
 
 
     // Prepare train
-    std::unique_ptr<SequenceGenerator_base> seqGen(new SequenceGenerator_image(PATH_train));
-    seqGen->prepare();
+    std::unique_ptr<SequenceGenerator_base> seqGen_train(new SequenceGenerator_image(PATH_train));
+    seqGen_train->prepare();
     if (wDebug)
     {
         // Create debug dir if not exist
         if (!std::experimental::filesystem::exists(debugDir))
             std::experimental::filesystem::create_directory(debugDir);
+        if (debugDir.back() != '/')
+            debugDir += '/';
     }
 
 
     /// BG TRAIN
     FgBgSegmentator fgSegm;
-    cv::Mat_<cv::Vec3b> img = seqGen->getNext();
+    cv::Mat_<cv::Vec3b> img = seqGen_train->getNext();
     std::cout << "Train the fg/bg segmentator...\n";
     while ( !img.empty() )
     {
+        std::cerr << "Train " << seqGen_train->getFrameIDstring() << "\n";
         fgSegm.train(img);
-        img = seqGen->getNext();
+        img = seqGen_train->getNext();
     }
 
 
@@ -44,34 +47,38 @@ int main()
     /// Run the keying
     // Prepare run
     std::unique_ptr<SequenceGenerator_base> seqGen_run(new SequenceGenerator_image(PATH_run));
-    seqGen->prepare();
+    seqGen_run->prepare();
 
     // Keying
     std::cout << "Keying...\n";
     StreamKeying keyer;
-    img = seqGen->getNext();
+    img = seqGen_run->getNext();
     while ( !img.empty() )
     {
+        std::cerr << "Run " << seqGen_run->getFrameIDstring() << "\n";
+
         // Raw fg/bg regmentation
         cv::Mat_<uchar> rawFgBgSegmentedImg = fgSegm.segmenting(img);
 
         // Create sure Fg/Bg regions
         // TODO
-        cv::Mat_<uchar> sureRegions;
+        cv::Mat_<uchar> sureRegions = rawFgBgSegmentedImg;
 
         // Update keyer
-        keyer.update(img, sureRegions);
+        keyer.update(img, sureRegions, wDebug);
 
         // Keying
         cv::Mat_<uchar> key = keyer.keying(img, sureRegions);
 
         if (wDebug)
         {
-            cv::imwrite(debugDir + "rawFgBgSegmentedImg_" + seqGen->getFrameIDstring() + ".png", rawFgBgSegmentedImg);
+            cv::imwrite(debugDir + "rawFgBgSegmentedImg_" + seqGen_run->getFrameIDstring() + ".png", rawFgBgSegmentedImg);
+            for (const auto& pair : keyer.debug_imgs)
+                cv::imwrite(debugDir + pair.first + "_" + seqGen_run->getFrameIDstring() + ".png", pair.second);
         }
 
         // Go to next frame
-        img = seqGen->getNext();
+        img = seqGen_run->getNext();
     }
 
 
