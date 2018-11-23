@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <experimental/filesystem>
 #include <iostream>
+#include <iomanip>
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
@@ -16,7 +17,8 @@ struct SequenceGenerator_base
     SequenceGenerator_base(const std::string& PATH) : PATH(PATH) {}
     virtual ~SequenceGenerator_base() {}
     virtual void prepare() = 0;
-    virtual cv::Mat_<cv::Vec3b> getNext() { frameID++; return cv::Mat_<cv::Vec3b>(); };
+    virtual cv::Mat_<cv::Vec3b> getNext() { frameID++; return cv::Mat_<cv::Vec3b>(); }
+    std::string getFrameIDstring() const { std::stringstream ss; ss << std::setfill('0') << std::setw(5) << frameID; return ss.str(); }
 
     std::string PATH;
     ulong frameID = 0;
