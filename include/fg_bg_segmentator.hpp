@@ -9,8 +9,8 @@
 
 struct Pixel
 {
-    const size_t MAX_SAMPLE_SIZE = 32;
-    const double UPDATE_PROBABILITY = .25; // bg update probability
+    const size_t MAX_SAMPLE_SIZE = 64;
+    const double UPDATE_PROBABILITY = .5; // bg update probability
 
     void addBgSample(const cv::Vec3b& color)
     {
@@ -81,14 +81,19 @@ struct FgBgSegmentator
 
     cv::Mat_<uchar> segmenting(const cv::Mat_<cv::Vec3b>& img) const
     {
-        const double MAX_RGB_DISTANCE = 10;
+        const double MAX_RGB_DISTANCE_BG = 10;
+        const double MAX_RGB_DISTANCE_FG = 50;
 
-        cv::Mat_<uchar> segments = cv::Mat_<uchar>::zeros(img.size());
+        cv::Mat_<uchar> segments = cv::Mat_<uchar>(img.size(), 125);
 
         for (int r = 0; r < img.rows; r++)
             for (int c = 0; c < img.cols; c++)
-                segments(r,c) = (matrix[r][c].isBg(img(r,c), MAX_RGB_DISTANCE)) ? 0 : 255;
-
+            {
+                if (matrix[r][c].isBg(img(r,c), MAX_RGB_DISTANCE_BG))   // Sure BG
+                    segments(r,c) = 0;
+                else if (!matrix[r][c].isBg(img(r,c), MAX_RGB_DISTANCE_FG))   // Sure FG
+                    segments(r,c) = 255;
+             }
         return segments;
     }
 

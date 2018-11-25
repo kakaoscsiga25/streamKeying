@@ -11,8 +11,10 @@
 int main()
 {
     // Read video/image sequence
-    const std::string PATH_train = "/home/gergo/data/2018-11-07_chessBoardCalib_noResize_mid";
-    const std::string PATH_run = "/home/gergo/data/2018-11-07_chessBoardCalib_noResize_mid";
+    const std::string PATH_train = "/home/gergo/data/2018-11-24_keyingVideos/train_small";
+    const std::string PATH_run = "/home/gergo/data/2018-11-24_keyingVideos/test_small";
+//    const std::string PATH_train = "/home/gergo/data/2018-11-07_chessBoardCalib_noResize_mid";
+//    const std::string PATH_run = "/home/gergo/data/2018-11-07_chessBoardCalib_noResize_mid";
 
     bool wDebug = true;
     std::string debugDir = "./debug";
@@ -20,6 +22,7 @@ int main()
 
     // Prepare train
     std::unique_ptr<SequenceGenerator_base> seqGen_train(new SequenceGenerator_image(PATH_train));
+//    std::unique_ptr<SequenceGenerator_base> seqGen_train(new SequenceGenerator_video(PATH_train));
     seqGen_train->prepare();
     if (wDebug)
     {
@@ -34,13 +37,14 @@ int main()
     /// BG TRAIN
     FgBgSegmentator fgSegm;
     cv::Mat_<cv::Vec3b> img = seqGen_train->getNext();
-    std::cout << "Train the fg/bg segmentator...\n";
+    std::cout << "Train the fg/bg segmentator";
     while ( !img.empty() )
     {
-        std::cerr << "Train " << seqGen_train->getFrameIDstring() << "\n";
+        std::cout << "." << std::flush;
         fgSegm.train(img);
         img = seqGen_train->getNext();
     }
+    std::cout << "DONE\n";
 
 
     std::cout << "Prepare for keying...\n";
@@ -50,12 +54,12 @@ int main()
     seqGen_run->prepare();
 
     // Keying
-    std::cout << "Keying...\n";
+    std::cout << "Keying" << std::flush;
     StreamKeying keyer;
     img = seqGen_run->getNext();
     while ( !img.empty() )
     {
-        std::cerr << "Run " << seqGen_run->getFrameIDstring() << "\n";
+        std::cout << "." << std::flush;
 
         // Raw fg/bg regmentation
         cv::Mat_<uchar> rawFgBgSegmentedImg = fgSegm.segmenting(img);
@@ -72,14 +76,24 @@ int main()
 
         if (wDebug)
         {
-            cv::imwrite(debugDir + "rawFgBgSegmentedImg_" + seqGen_run->getFrameIDstring() + ".png", rawFgBgSegmentedImg);
+            std::string saveDir = debugDir + "rawFgBgSegmentedImg/";
+            createDirIfNotExist(saveDir);
+            cv::imwrite( saveDir + seqGen_run->getFrameIDstring() + ".png", rawFgBgSegmentedImg);
             for (const auto& pair : keyer.debug_imgs)
-                cv::imwrite(debugDir + pair.first + "_" + seqGen_run->getFrameIDstring() + ".png", pair.second);
+            {
+                saveDir = debugDir + pair.first + "/";
+                createDirIfNotExist(saveDir);
+                cv::imwrite(saveDir + seqGen_run->getFrameIDstring() + ".png", pair.second);
+            }
+            saveDir = debugDir + "result/";
+            createDirIfNotExist(saveDir);
+            cv::imwrite( saveDir + seqGen_run->getFrameIDstring() + ".png", key);
         }
 
         // Go to next frame
         img = seqGen_run->getNext();
     }
+    std::cout << "DONE\n";
 
 
     return 0;

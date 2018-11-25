@@ -69,10 +69,41 @@ struct SequenceGenerator_image : public SequenceGenerator_base
 
     std::deque<std::string> fileNames;
 };
-
+#include <opencv2/opencv.hpp>
 struct SequenceGenerator_video : public SequenceGenerator_base
 {
-    // TODO
+    SequenceGenerator_video(const std::string& PATH) : SequenceGenerator_base(PATH) {}
+    ~SequenceGenerator_video() { if (cap.isOpened()) cap.release(); }
+    virtual void prepare()
+    {
+        // File exists?
+        // TODO
+
+        // Open the stream
+        cap.open(PATH);
+
+        // Check if camera opened successfully
+        if(!cap.isOpened())
+            throw std::runtime_error("Error opening video stream or file: " + PATH);
+    }
+
+    virtual cv::Mat_<cv::Vec3b> getNext()
+    {
+        cv::Mat frame;
+        cap >> frame;
+
+        if (frame.empty())
+        {
+            std::cout << "End of video!\n";
+            return cv::Mat_<cv::Vec3b>();
+        }
+
+        SequenceGenerator_base::getNext(); // call parent
+        // TEST
+        cv::imshow("asd", frame);
+        cv::waitKey(0);
+    }
+    cv::VideoCapture cap;
 };
 
 #endif // SEQUENCE_GENERATOR_HPP

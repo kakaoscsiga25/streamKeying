@@ -5,17 +5,36 @@
 #include <opencv2/imgproc.hpp>
 #include <dlib/svm.h>
 
+#include <opencv2/opencv.hpp> // tmp debug
+
 
 struct StreamKeying
 {
-    typedef dlib::matrix<double, 2, 1> sample_type;
-    typedef dlib::radial_basis_kernel<sample_type> kernel_type;
+    typedef dlib::matrix<double, 5, 1> sample_type;
+    typedef dlib::linear_kernel<sample_type> kernel_type;
+//    typedef dlib::radial_basis_kernel<sample_type> kernel_type;
 
-    const size_t MAX_SAMPLE_UPDATE = 1000; // fg-bg pair
+    sample_type dataToFeatVec(const cv::Vec3b& color, const cv::Point& pos)
+    {
+        sample_type st;
+        st(0) = color[0];
+        st(1) = color[1];
+        st(2) = color[2];
+        st(3) = pos.x;
+        st(4) = pos.y;
+        return st;
+    }
+
+    const size_t MAX_SAMPLE_UPDATE = 10000; // fg-bg pair
     const int NEAR_REGION_SIZE = 10; // region width of the sure fg/bg in pixel
-    const double NEAR_FAR_SAMPLE_RATIO = .5; // ratio btw near-far regio sample number (0.1 -> 10% near, 90% far)
+    const double NEAR_FAR_SAMPLE_RATIO = 0.; // ratio btw near-far regio sample number (0.1 -> 10% far, 90% near)
 
-    StreamKeying() { svm.set_lambda(0.00001); svm.set_kernel(kernel_type(0.005)); svm.set_max_num_sv(10); }
+    StreamKeying()
+    {
+        svm.set_lambda(2);
+//        svm.set_kernel(kernel_type(0.005));
+        svm.set_max_num_sv(1000);
+    }
 
     void update(const cv::Mat_<cv::Vec3b>& origin, const cv::Mat_<uchar>& sureRegions, bool wDebug)
     {
@@ -87,9 +106,15 @@ struct StreamKeying
             const cv::Point& fgPt = fgColors.at(idx).first;
             const cv::Point& bgPt = bgColors.at(idx).first;
 
-            // SVM update
-            // TODO
+            // SVM update - BG
+            sample_type featVec = dataToFeatVec(bgColor, bgPt);
+            svm.train(featVec, -1.); // BG
 
+            // SVM update - FG
+            featVec = dataToFeatVec(fgColor, fgPt);
+            svm.train(featVec, +1.); // FG
+
+            // DEBUG
             selectedFgPts(fgPt) = 255;
             selectedBgPts(bgPt) = 255;
         }
@@ -98,7 +123,7 @@ struct StreamKeying
         // DEBUG
         if (wDebug)
         {
-            debug_imgs["sureRegions"] = sureRegions;
+//            debug_imgs["sureRegions"] = sureRegions;
             debug_imgs["sureFg"] = fg;
             debug_imgs["sureBg"] = bg;
             debug_imgs["interestingSureRegion_fg"] = interestingSureRegion_fg;
@@ -110,8 +135,19 @@ struct StreamKeying
 
     cv::Mat_<uchar> keying(const cv::Mat_<cv::Vec3b>& origin, const cv::Mat_<uchar>& sureRegions)
     {
-        // TODO
-        return cv::Mat_<uchar>();
+//        cv::imshow("asd", origin);
+//        cv::waitKey(0);
+        cv::Mat_<uchar> key(origin.size());
+        for (int r = 0; r < origin.rows; r++)
+            for (int c = 0; c < origin.cols; c++)
+            {
+                const cv::Vec3b& color = origin(r,c);
+                cv::Point pos(c,r);
+                sample_type featVec = dataToFeatVec(color, pos);
+                double label = svm(featVec);
+                key(r,c) = (label < 0.) ? 0 : 255;
+            }
+        return key;
     }
 
     std::map<std::string, cv::Mat> debug_imgs;
