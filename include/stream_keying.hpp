@@ -142,7 +142,10 @@ struct StreamKeying
                 const cv::Vec3b& color = origin(r,c);
                 cv::Point pos(c,r);
                 double label = keyer->decision(color, pos, origin);
-                key(r,c) = (label < 0.) ? 0 : 255;
+//                key(r,c) = (label <= 0.) ? 0 : 255;
+                label = std::min(255.,label);
+                label = std::max(0.,label);
+                key(r,c) = static_cast<uchar>(label);
             }
         return key;
     }

@@ -23,16 +23,20 @@ public:
         // Layer 3 -- fully connected, input size 5x5x3, output size 2
 //        MiniDNN::Layer* layer3 = new MiniDNN::FullyConnected<MiniDNN::Identity>(5 * 5 * 3, 2);
 
-        MiniDNN::Layer* layer1 = new MiniDNN::Convolutional<MiniDNN::ReLU>(20, 20, 1, 3, 5, 5);
-        MiniDNN::Layer* layer2 = new MiniDNN::MaxPooling<MiniDNN::ReLU>(16, 16, 3, 3, 3);
-        MiniDNN::Layer* layer3 = new MiniDNN::FullyConnected<MiniDNN::Identity>(5 * 5 * 3, 1);
+//        MiniDNN::Layer* layer1 = new MiniDNN::Convolutional<MiniDNN::ReLU>(20, 20, 1, 3, 5, 5);     net.add_layer(layer1);
+//        MiniDNN::Layer* layer2 = new MiniDNN::MaxPooling<MiniDNN::ReLU>(16, 16, 3, 3, 3);           net.add_layer(layer2);
+        net.add_layer(new MiniDNN::Convolutional<MiniDNN::ReLU>(8, 1, 1, 3, 1, 1));
+//        net.add_layer(new MiniDNN::MaxPooling<MiniDNN::ReLU>(8, 1, 3, 1, 1));
+//        net.add_layer(new MiniDNN::MaxPooling<MiniDNN::ReLU>(8, 1, 1, 1, 1));
+//        net.add_layer(new MiniDNN::FullyConnected<MiniDNN::ReLU>(5, 3));
+        net.add_layer(new MiniDNN::FullyConnected<MiniDNN::Identity>(8*3, 1));
+//        net.add_layer(new MiniDNN::FullyConnected<MiniDNN::Identity>(10, 6));
 
-        net.add_layer(layer1);
-        net.add_layer(layer2);
-        net.add_layer(layer3);
+//        net.set_output(new MiniDNN::BinaryClassEntropy());
+//        net.set_output(new MiniDNN::MultiClassEntropy());
         net.set_output(new MiniDNN::RegressionMSE());
 
-        opt.m_lrate = 0.1;
+        opt.m_lrate = 0.01;
 
 
         // DEBUG
@@ -46,17 +50,25 @@ public:
     Matrix dataToFeatVec(const cv::Vec3b& color, const cv::Point& pos, const cv::Size& imgSize, const cv::Mat_<cv::Vec3b>& img)
     {
         assert(imgSize != cv::Size(-1,-1));
-        cv::Size s(20,20);
-        cv::Rect roiRect(pos.x - s.width/2, pos.y - s.height/2, s.width, s.height);
-        cv::Mat_<cv::Vec3b> ROI = getExtendedROI(img, roiRect);
-        Matrix fv = Matrix(400,1);
-        for (int r = 0; r < 400/5; r++)
+//        cv::Size s(20,20);
+//        cv::Rect roiRect(pos.x - s.width/2, pos.y - s.height/2, s.width, s.height);
+//        cv::Mat_<cv::Vec3b> ROI = getExtendedROI(img, roiRect);
+        Matrix fv = Matrix(8,1);
+//        for (int r = 0; r < 400/5; r++)
         {
-            fv(r*5+0,0) = static_cast<double>(color[0]) / 255.;
-            fv(r*5+1,0) = static_cast<double>(color[1]) / 255.;
-            fv(r*5+2,0) = static_cast<double>(color[2]) / 255.;
-            fv(r*5+3,0) = static_cast<double>(pos.x) / (imgSize.width-1);
-            fv(r*5+4,0) = static_cast<double>(pos.y) / (imgSize.height-1);
+//            fv(0,0) = static_cast<double>(color[0]);
+//            fv(1,0) = static_cast<double>(color[1]);
+//            fv(2,0) = static_cast<double>(color[2]);
+//            fv(3,0) = static_cast<double>(pos.x);
+//            fv(4,0) = static_cast<double>(pos.y);
+            fv(0,0) = static_cast<double>(color[0]) / 255.;
+            fv(1,0) = static_cast<double>(color[1]) / 255.;
+            fv(2,0) = static_cast<double>(color[2]) / 255.;
+            fv(3,0) = static_cast<double>(pos.x) / (imgSize.width-1);
+            fv(4,0) = static_cast<double>(pos.y) / (imgSize.height-1);
+            fv(5,0) = fv(3,0)*fv(3,0);
+            fv(7,0) = fv(4,0)*fv(4,0);
+            fv(6,0) = fv(3,0)*fv(4,0);
         }
         return fv;
     }
@@ -99,30 +111,32 @@ public:
 
     void updateAll(std::vector<std::pair<cv::Point, cv::Vec3b> > fgPts, std::vector<std::pair<cv::Point, cv::Vec3b> > bgPts, cv::Mat_<cv::Vec3b> img)
     {
-        Matrix x(400, fgPts.size() + bgPts.size());
+        Matrix x(8, fgPts.size() + bgPts.size());
         Matrix y(1, fgPts.size() + bgPts.size());
         uint idx = 0;
         for (auto pts : fgPts)
         {
             Matrix m = dataToFeatVec(pts.second, pts.first, img.size(), img);
-            x.block<400,1>(0,idx) = m;
-            y(0,idx) = +1;
+            x.block<8,1>(0,idx) = m;
+            y(0,idx) =255;
             idx++;
         }
         for (auto pts : bgPts)
         {
             Matrix m = dataToFeatVec(pts.second, pts.first, img.size(), img);
-            x.block<400,1>(0,idx) = m;
-            y(0,idx) = -1;
+            x.block<8,1>(0,idx) = m;
+            y(0,idx) = 0;
             idx++;
         }
-        net.fit(opt, x, y, 100000, 10, 123);
+//        std::cerr << y << "\n";
+        net.fit(opt, x, y, 100000, 10000, 123);
     }
 
     virtual double decision(const cv::Vec3b& color, const cv::Point& pos, const cv::Mat_<cv::Vec3b>& img)
     {
         Matrix x = dataToFeatVec(color, pos, img.size(), img);
         Matrix pred = net.predict(x);
+//        std::cerr << pred << "\n";
         return  pred(0,0);
     }
 
