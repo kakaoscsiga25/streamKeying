@@ -5,29 +5,15 @@
 #include <opencv2/imgproc.hpp>
 #include <dlib/svm.h>
 
-#include <opencv2/opencv.hpp> // tmp debug
+#include "keyers/keyer_dnn.hpp"
+#include "keyers/keyer_svm.hpp"
 
 
 struct StreamKeying
 {
-    typedef dlib::matrix<double, 5, 1> sample_type;
-//    typedef dlib::linear_kernel<sample_type> kernel_type;
-//    typedef dlib::polynomial_kernel<sample_type> kernel_type;
-    typedef dlib::radial_basis_kernel<sample_type> kernel_type;
 
-    sample_type dataToFeatVec(const cv::Vec3b& color, const cv::Point& pos)
-    {
-        assert(imgSize != cv::Size(-1,-1));
-        sample_type st;
-        st(0) = static_cast<double>(color[0]) / 255.;
-        st(1) = static_cast<double>(color[1]) / 255.;
-        st(2) = static_cast<double>(color[2]) / 255.;
-        st(3) = static_cast<double>(pos.x) / (imgSize.width-1);
-        st(4) = static_cast<double>(pos.y) / (imgSize.height-1);
-//        st(5) = std::sin(st(3) * 100.);
-//        st(6) = std::sin(st(4) * 100.);
-        return st;
-    }
+
+
 
     const size_t MAX_SAMPLE_UPDATE = 10000; // fg-bg pair
     const int NEAR_REGION_SIZE = 10; // region width of the sure fg/bg in pixel
@@ -35,10 +21,9 @@ struct StreamKeying
 
     StreamKeying()
     {
-        svm.set_lambda(1e-4);
-        svm.set_kernel(kernel_type(50));
-        svm.set_max_num_sv(100);
+        keyer = new KeyerSVM();
     }
+    ~StreamKeying() { delete keyer; }
 
     void update(const cv::Mat_<cv::Vec3b>& origin, const cv::Mat_<uchar>& sureRegions, bool wDebug)
     {
@@ -116,13 +101,10 @@ struct StreamKeying
             const cv::Point& fgPt = fgColors.at(idx).first;
             const cv::Point& bgPt = bgColors.at(idx).first;
 
-            // SVM update - BG
-            sample_type featVec = dataToFeatVec(bgColor, bgPt);
-            svm.train(featVec, -1.); // BG
-
-            // SVM update - FG
-            featVec = dataToFeatVec(fgColor, fgPt);
-            svm.train(featVec, +1.); // FG
+            // Keyer update - BG
+            keyer->update(-1., bgColor, bgPt, origin);
+            // Keyer update - FG
+            keyer->update(+1., fgColor, fgPt, origin);
 
             // DEBUG
             selectedFgPts(fgPt) = 255;
@@ -141,7 +123,6 @@ struct StreamKeying
             debug_imgs["selectedFgPts"] = selectedFgPts;
             debug_imgs["selectedBgPts"] = selectedBgPts;
         }
-        std::cerr << "#SV: " << svm.get_decision_function().basis_vectors.size() << "\n";
     }
 
     cv::Mat_<uchar> keying(const cv::Mat_<cv::Vec3b>& origin, const cv::Mat_<uchar>& sureRegions)
@@ -154,8 +135,7 @@ struct StreamKeying
             {
                 const cv::Vec3b& color = origin(r,c);
                 cv::Point pos(c,r);
-                sample_type featVec = dataToFeatVec(color, pos);
-                double label = svm(featVec);
+                double label = keyer->decision(color, pos, origin);
                 key(r,c) = (label < 0.) ? 0 : 255;
             }
         return key;
@@ -164,7 +144,7 @@ struct StreamKeying
     std::map<std::string, cv::Mat> debug_imgs;
 
 protected:
-    dlib::svm_pegasos<kernel_type> svm;
+    Keyer_base* keyer = 0;
     cv::Size imgSize = cv::Size(-1,-1);
 };
 
