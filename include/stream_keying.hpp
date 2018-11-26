@@ -11,17 +11,21 @@
 struct StreamKeying
 {
     typedef dlib::matrix<double, 5, 1> sample_type;
-    typedef dlib::linear_kernel<sample_type> kernel_type;
-//    typedef dlib::radial_basis_kernel<sample_type> kernel_type;
+//    typedef dlib::linear_kernel<sample_type> kernel_type;
+//    typedef dlib::polynomial_kernel<sample_type> kernel_type;
+    typedef dlib::radial_basis_kernel<sample_type> kernel_type;
 
     sample_type dataToFeatVec(const cv::Vec3b& color, const cv::Point& pos)
     {
+        assert(imgSize != cv::Size(-1,-1));
         sample_type st;
-        st(0) = color[0];
-        st(1) = color[1];
-        st(2) = color[2];
-        st(3) = pos.x;
-        st(4) = pos.y;
+        st(0) = static_cast<double>(color[0]) / 255.;
+        st(1) = static_cast<double>(color[1]) / 255.;
+        st(2) = static_cast<double>(color[2]) / 255.;
+        st(3) = static_cast<double>(pos.x) / (imgSize.width-1);
+        st(4) = static_cast<double>(pos.y) / (imgSize.height-1);
+//        st(5) = std::sin(st(3) * 100.);
+//        st(6) = std::sin(st(4) * 100.);
         return st;
     }
 
@@ -31,13 +35,19 @@ struct StreamKeying
 
     StreamKeying()
     {
-        svm.set_lambda(2);
-//        svm.set_kernel(kernel_type(0.005));
-        svm.set_max_num_sv(1000);
+        svm.set_lambda(1e-4);
+        svm.set_kernel(kernel_type(50));
+        svm.set_max_num_sv(100);
     }
 
     void update(const cv::Mat_<cv::Vec3b>& origin, const cv::Mat_<uchar>& sureRegions, bool wDebug)
     {
+        // ImgSize update/check
+        if (imgSize == cv::Size(-1,-1))
+            imgSize = origin.size();
+        if (imgSize != origin.size())
+            throw std::runtime_error("Wrong origin : imgSize!");
+
         cv::Mat_<uchar> fg, bg;
         cv::threshold(sureRegions, fg, 250, 255, CV_THRESH_BINARY);
         cv::threshold(sureRegions, bg, 10, 255, CV_THRESH_BINARY_INV);
@@ -131,6 +141,7 @@ struct StreamKeying
             debug_imgs["selectedFgPts"] = selectedFgPts;
             debug_imgs["selectedBgPts"] = selectedBgPts;
         }
+        std::cerr << "#SV: " << svm.get_decision_function().basis_vectors.size() << "\n";
     }
 
     cv::Mat_<uchar> keying(const cv::Mat_<cv::Vec3b>& origin, const cv::Mat_<uchar>& sureRegions)
@@ -154,6 +165,7 @@ struct StreamKeying
 
 protected:
     dlib::svm_pegasos<kernel_type> svm;
+    cv::Size imgSize = cv::Size(-1,-1);
 };
 
 #endif // STREAM_KEYING_HPP

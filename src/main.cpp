@@ -37,7 +37,7 @@ int main()
     /// BG TRAIN
     FgBgSegmentator fgSegm;
     cv::Mat_<cv::Vec3b> img = seqGen_train->getNext();
-    std::cout << "Train the fg/bg segmentator";
+    std::cout << "Train the fg/bg segmentator" << std::flush;
     while ( !img.empty() )
     {
         std::cout << "." << std::flush;
