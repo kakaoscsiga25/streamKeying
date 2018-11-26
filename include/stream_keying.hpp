@@ -21,7 +21,8 @@ struct StreamKeying
 
     StreamKeying()
     {
-        keyer = new KeyerSVM();
+//        keyer = new KeyerSVM();
+        keyer = new KeyerDNN();
     }
     ~StreamKeying() { delete keyer; }
 
@@ -91,6 +92,10 @@ struct StreamKeying
         bgColors.insert(bgColors.end(), bgColors_far.begin(), bgColors_far.end());
         std::random_shuffle(bgColors.begin(), bgColors.end());
 
+        KeyerDNN* kDNN = dynamic_cast<KeyerDNN*>(keyer);
+        kDNN->updateAll(fgColors, bgColors, origin);
+
+        /*
         // Select points
         cv::Mat_<uchar> selectedFgPts = fg / 2;
         cv::Mat_<uchar> selectedBgPts = bg / 2;
@@ -110,6 +115,7 @@ struct StreamKeying
             selectedFgPts(fgPt) = 255;
             selectedBgPts(bgPt) = 255;
         }
+        */
 
 
         // DEBUG
@@ -120,8 +126,8 @@ struct StreamKeying
             debug_imgs["sureBg"] = bg;
             debug_imgs["interestingSureRegion_fg"] = interestingSureRegion_fg;
             debug_imgs["interestingSureRegion_bg"] = interestingSureRegion_bg;
-            debug_imgs["selectedFgPts"] = selectedFgPts;
-            debug_imgs["selectedBgPts"] = selectedBgPts;
+//            debug_imgs["selectedFgPts"] = selectedFgPts;
+//            debug_imgs["selectedBgPts"] = selectedBgPts;
         }
     }
 

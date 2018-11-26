@@ -11,7 +11,7 @@
 int main()
 {
     // Read video/image sequence
-    const std::string PATH_train = "/home/gergo/data/2018-11-24_keyingVideos/train_small";
+    const std::string PATH_train = "/home/gergo/data/2018-11-24_keyingVideos/train_usmall";
     const std::string PATH_run = "/home/gergo/data/2018-11-24_keyingVideos/test_small";
 //    const std::string PATH_train = "/home/gergo/data/2018-11-07_chessBoardCalib_noResize_mid";
 //    const std::string PATH_run = "/home/gergo/data/2018-11-07_chessBoardCalib_noResize_mid";

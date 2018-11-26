@@ -6,14 +6,14 @@
 #include "keyer_base.hpp"
 
 
-struct KeyerSVM : public Keyer_base
+class KeyerSVM : public Keyer_base
 {
     typedef dlib::matrix<double, 5, 1> sample_type;
 //    typedef dlib::linear_kernel<sample_type> kernel_type;
 //    typedef dlib::polynomial_kernel<sample_type> kernel_type;
     typedef dlib::radial_basis_kernel<sample_type> kernel_type;
 
-
+public:
     KeyerSVM()
     {
         svm.set_lambda(1e-4);
@@ -44,6 +44,7 @@ struct KeyerSVM : public Keyer_base
         return svm(dataToFeatVec(color, pos, img.size()));
     }
 
+protected:
     dlib::svm_pegasos<kernel_type> svm;
 };
 

@@ -10,6 +10,7 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
 
 
 struct SequenceGenerator_base
@@ -69,7 +70,7 @@ struct SequenceGenerator_image : public SequenceGenerator_base
 
     std::deque<std::string> fileNames;
 };
-#include <opencv2/opencv.hpp>
+
 struct SequenceGenerator_video : public SequenceGenerator_base
 {
     SequenceGenerator_video(const std::string& PATH) : SequenceGenerator_base(PATH) {}

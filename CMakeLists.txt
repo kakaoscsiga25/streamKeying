@@ -9,10 +9,13 @@ set(CMAKE_CXX_FLAGS "-Wall")
 find_package(OpenCV 3.4.1 REQUIRED)
 find_package(dlib 19.13 REQUIRED)
 
-
 include_directories(include)
+include_directories(3rdparty/miniDNN)
 include_directories(${OpenCV_INCLUDE})
 include_directories(${dlib_INCLUDE_DIRS})
+
+# EIGEN
+include_directories(/home/gergo/research/3rdparty/eigen3/install/include/eigen3)
 
 
 # Test executable for desktop
