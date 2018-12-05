@@ -15,7 +15,7 @@ struct StreamKeying
 
 
 
-    const size_t MAX_SAMPLE_UPDATE = 1000; // fg-bg pair
+    const size_t MAX_SAMPLE_UPDATE = 10000; // fg-bg pair
     const int NEAR_REGION_SIZE = 10; // region width of the sure fg/bg in pixel
     const double NEAR_FAR_SAMPLE_RATIO = 0.; // ratio btw near-far regio sample number (0.1 -> 10% far, 90% near)
 
@@ -143,6 +143,7 @@ struct StreamKeying
                 const cv::Vec3b& color = origin(r,c);
                 cv::Point pos(c,r);
                 double label = keyer->decision(color, pos, origin);
+//                std::cerr << label << "\n";
                 key(r,c) = (label <= 0.) ? 0 : 255; continue;
 
                 label = std::min(255.,label);
