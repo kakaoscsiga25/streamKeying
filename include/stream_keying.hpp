@@ -15,14 +15,14 @@ struct StreamKeying
 
 
 
-    const size_t MAX_SAMPLE_UPDATE = 10000; // fg-bg pair
+    const size_t MAX_SAMPLE_UPDATE = 1000; // fg-bg pair
     const int NEAR_REGION_SIZE = 10; // region width of the sure fg/bg in pixel
     const double NEAR_FAR_SAMPLE_RATIO = 0.; // ratio btw near-far regio sample number (0.1 -> 10% far, 90% near)
 
     StreamKeying()
     {
-//        keyer = new KeyerSVM();
-        keyer = new KeyerDNN();
+        keyer = new KeyerSVM();
+//        keyer = new KeyerDNN();
     }
     ~StreamKeying() { delete keyer; }
 
@@ -92,10 +92,10 @@ struct StreamKeying
         bgColors.insert(bgColors.end(), bgColors_far.begin(), bgColors_far.end());
         std::random_shuffle(bgColors.begin(), bgColors.end());
 
-        KeyerDNN* kDNN = dynamic_cast<KeyerDNN*>(keyer);
-        kDNN->updateAll(fgColors, bgColors, origin);
+//        KeyerDNN* kDNN = dynamic_cast<KeyerDNN*>(keyer);
+//        kDNN->updateAll(fgColors, bgColors, origin);
 
-        /*
+        //*
         // Select points
         cv::Mat_<uchar> selectedFgPts = fg / 2;
         cv::Mat_<uchar> selectedBgPts = bg / 2;
@@ -115,7 +115,8 @@ struct StreamKeying
             selectedFgPts(fgPt) = 255;
             selectedBgPts(bgPt) = 255;
         }
-        */
+        std::cerr << keyer->info() << '\n';
+        //*/
 
 
         // DEBUG
@@ -126,8 +127,8 @@ struct StreamKeying
             debug_imgs["sureBg"] = bg;
             debug_imgs["interestingSureRegion_fg"] = interestingSureRegion_fg;
             debug_imgs["interestingSureRegion_bg"] = interestingSureRegion_bg;
-//            debug_imgs["selectedFgPts"] = selectedFgPts;
-//            debug_imgs["selectedBgPts"] = selectedBgPts;
+            debug_imgs["selectedFgPts"] = selectedFgPts;
+            debug_imgs["selectedBgPts"] = selectedBgPts;
         }
     }
 
@@ -142,7 +143,8 @@ struct StreamKeying
                 const cv::Vec3b& color = origin(r,c);
                 cv::Point pos(c,r);
                 double label = keyer->decision(color, pos, origin);
-//                key(r,c) = (label <= 0.) ? 0 : 255;
+                key(r,c) = (label <= 0.) ? 0 : 255; continue;
+
                 label = std::min(255.,label);
                 label = std::max(0.,label);
                 key(r,c) = static_cast<uchar>(label);

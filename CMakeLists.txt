@@ -15,7 +15,8 @@ include_directories(${OpenCV_INCLUDE})
 include_directories(${dlib_INCLUDE_DIRS})
 
 # EIGEN
-include_directories(/home/gergo/research/3rdparty/eigen3/install/include/eigen3)
+include_directories(/home/gergo/dev/eigen-git-mirror/install/3_3_5/include/eigen3)
+#include_directories(/home/gergo/research/3rdparty/eigen3/install/include/eigen3)
 
 
 # Test executable for desktop

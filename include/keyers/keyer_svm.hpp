@@ -17,7 +17,7 @@ public:
     KeyerSVM()
     {
         svm.set_lambda(1e-4);
-        svm.set_kernel(kernel_type(50));
+        svm.set_kernel(kernel_type(5));
         svm.set_max_num_sv(100);
     }
 
@@ -43,6 +43,8 @@ public:
     {
         return svm(dataToFeatVec(color, pos, img.size()));
     }
+
+    virtual std::string info() const { return "#SV " + std::to_string(svm.get_decision_function().basis_vectors.size()); }
 
 protected:
     dlib::svm_pegasos<kernel_type> svm;
