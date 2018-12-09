@@ -38,8 +38,12 @@ struct SequenceGenerator_image : public SequenceGenerator_base
             std::string str = ss.str();
             str.erase(str.end()-1); // Remove "
             str.erase(str.begin()); // Remove "
-            if (str.size() > 4 && str.substr(str.size()-4, 4) == ".png")
-                fileNames.push_back(str);
+            if (str.size() > 4)
+            {
+                std::string ext = str.substr(str.size()-4, 4);
+                if (ext == ".png" || ext == ".jpg")
+                    fileNames.push_back(str);
+            }
         }
         // sort by ABC
         std::sort(fileNames.begin(), fileNames.end());

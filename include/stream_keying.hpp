@@ -17,7 +17,7 @@ struct StreamKeying
 
     const size_t MAX_SAMPLE_UPDATE = 10000; // fg-bg pair
     const int NEAR_REGION_SIZE = 10; // region width of the sure fg/bg in pixel
-    const double NEAR_FAR_SAMPLE_RATIO = 0.; // ratio btw near-far regio sample number (0.1 -> 10% far, 90% near)
+    const double NEAR_FAR_SAMPLE_RATIO = 0.5; // ratio btw near-far regio sample number (0.1 -> 10% far, 90% near)
 
     StreamKeying()
     {
@@ -26,7 +26,7 @@ struct StreamKeying
     }
     ~StreamKeying() { delete keyer; }
 
-    void update(const cv::Mat_<cv::Vec3b>& origin, const cv::Mat_<uchar>& sureRegions, bool wDebug)
+    void update(const cv::Mat_<cv::Vec3b>& origin, const cv::Mat_<uchar>& sureRegions, bool wDebug, cv::Mat_<cv::Vec3b> hackBg)
     {
         // ImgSize update/check
         if (imgSize == cv::Size(-1,-1))
@@ -88,8 +88,15 @@ struct StreamKeying
         std::vector<std::pair<cv::Point, cv::Vec3b> > fgColors = fgColors_near;
         fgColors.insert(fgColors.end(), fgColors_far.begin(), fgColors_far.end());
         std::random_shuffle(fgColors.begin(), fgColors.end());
-        std::vector<std::pair<cv::Point, cv::Vec3b> > bgColors = bgColors_near;
-        bgColors.insert(bgColors.end(), bgColors_far.begin(), bgColors_far.end());
+//        std::vector<std::pair<cv::Point, cv::Vec3b> > bgColors = bgColors_near;
+//        bgColors.insert(bgColors.end(), bgColors_far.begin(), bgColors_far.end());
+        // HACK
+        std::vector<std::pair<cv::Point, cv::Vec3b> > bgColors;
+        for (int i = 0; i < bgColors_near.size() + bgColors_far.size(); i++)
+        {
+            cv::Point p(rand()%hackBg.cols, rand()%hackBg.rows);
+            bgColors.push_back(std::pair<cv::Point, cv::Vec3b>(p, hackBg(p)));
+        }
         std::random_shuffle(bgColors.begin(), bgColors.end());
 
 //        KeyerDNN* kDNN = dynamic_cast<KeyerDNN*>(keyer);
@@ -122,6 +129,8 @@ struct StreamKeying
         // DEBUG
         if (wDebug)
         {
+            debug_imgs["origin"] = origin;
+            debug_imgs["hackBg"] = hackBg;
 //            debug_imgs["sureRegions"] = sureRegions;
             debug_imgs["sureFg"] = fg;
             debug_imgs["sureBg"] = bg;

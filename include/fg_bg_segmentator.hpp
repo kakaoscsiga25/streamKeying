@@ -97,6 +97,18 @@ struct FgBgSegmentator
         return segments;
     }
 
+    cv::Mat_<cv::Vec3b> hackBgImg() const
+    {
+        cv::Mat_<cv::Vec3b> hackBg(matrixSize);
+        for (int r = 0; r < matrix.size(); r++)
+            for (int c = 0; c < matrix[r].size(); c++)
+            {
+                const Pixel& pixel = matrix[r][c];
+                hackBg(r,c) = pixel.bgSamples.at(rand()%pixel.bgSamples.size());
+            }
+        return hackBg;
+    }
+
 protected:
     void init()
     {

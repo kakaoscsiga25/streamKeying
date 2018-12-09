@@ -11,8 +11,10 @@
 int main()
 {
     // Read video/image sequence
-    const std::string PATH_train = "/home/gergo/data/2018-11-24_keyingVideos/train_usmall";
-    const std::string PATH_run = "/home/gergo/data/2018-11-24_keyingVideos/test_small";
+    const std::string PATH_train = "/home/gergo/data/2018-12-09_keyingVideos/train_usmall";
+    const std::string PATH_run = "/home/gergo/data/2018-12-09_keyingVideos/test_small";
+//    const std::string PATH_train = "/home/gergo/data/2018-11-24_keyingVideos/train_usmall";
+//    const std::string PATH_run = "/home/gergo/data/2018-11-24_keyingVideos/test_small";
 //    const std::string PATH_train = "/home/gergo/data/2018-11-07_chessBoardCalib_noResize_mid";
 //    const std::string PATH_run = "/home/gergo/data/2018-11-07_chessBoardCalib_noResize_mid";
 
@@ -68,8 +70,10 @@ int main()
         // TODO
         cv::Mat_<uchar> sureRegions = rawFgBgSegmentedImg;
 
+        cv::Mat_<cv::Vec3b> hackBg = fgSegm.hackBgImg();
+
         // Update keyer
-        keyer.update(img, sureRegions, wDebug);
+        keyer.update(img, sureRegions, wDebug, hackBg);
 
         // Keying
         cv::Mat_<uchar> key = keyer.keying(img, sureRegions);
